@@ -1,12 +1,14 @@
-From rust:slim as build
+FROM rust:slim as build
 RUN USER=root cargo new --bin builddir
-workdir /builddir
+WORKDIR /builddir
 
-add Cargo.* /builddir/
-run cargo build --release && rm src/*.rs
+ADD Cargo.* /builddir/
+RUN cargo build --release && rm src/*.rs
 COPY ./src ./src
 
 # build for release
 RUN cargo clean && cargo build --release
 
-From bitnami/minideb:stretch
+FROM alpine:latest
+COPY --from=build /builddir/target/release/rust-app /app
+CMD ["/app"]
