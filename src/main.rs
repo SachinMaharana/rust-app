@@ -1,6 +1,10 @@
-use actix_web::{middleware, web, App, HttpRequest, HttpResponse, HttpServer};
-use serde_derive::Serialize;
 extern crate hostname;
+
+use actix_web::{middleware, web, App, HttpRequest, HttpResponse, HttpServer};
+use clap::{crate_authors, crate_description, crate_name, crate_version};
+use dotenv::dotenv;
+use serde_derive::Serialize;
+use std::env;
 
 #[derive(Debug, Serialize)]
 struct Health {
@@ -10,21 +14,30 @@ struct Health {
 struct NotFound {
     message: String,
 }
+#[derive(Debug, Serialize)]
+struct Env {
+    host: String,
+    remote_ip: String,
+}
 
 #[derive(Debug, Serialize)]
 struct Info {
-    host: String,
+    authors: String,
+    description: String,
+    name: String,
+    version: String,
 }
 
-fn index(_req: HttpRequest) -> HttpResponse {
-    let host_machine;
-    match hostname::get_hostname() {
-        Some(host) => host_machine = host,
-        None => host_machine = "".to_owned(),
-    }
-    HttpResponse::Ok()
-        .content_type("text/plain")
-        .body(format!("Your have hit {}", host_machine))
+fn index(req: HttpRequest) -> HttpResponse {
+    let host_machine = match hostname::get_hostname() {
+        Some(host) => host,
+        None => "".to_owned(),
+    };
+    let env = Env {
+        host: host_machine,
+        remote_ip: req.connection_info().host().to_owned(),
+    };
+    HttpResponse::Ok().json(env)
 }
 
 fn healthz(_req: HttpRequest) -> HttpResponse {
@@ -34,31 +47,40 @@ fn healthz(_req: HttpRequest) -> HttpResponse {
 
 fn not_found(_req: HttpRequest) -> HttpResponse {
     HttpResponse::NotFound().json(NotFound {
-        message: "Not Found".to_owned(),
+        message: "Resource Not Found".to_owned(),
     })
 }
 
-fn info(req: HttpRequest) -> HttpResponse {
-    let conn_info = req.connection_info();
-    let host = conn_info.host().to_owned();
-    let info = Info { host: host };
+// host: req.connection_info().host().to_owned(),
+
+fn info(_req: HttpRequest) -> HttpResponse {
+    let info = Info {
+        authors: crate_authors!().to_owned(),
+        description: crate_description!().to_owned(),
+        name: crate_name!().to_owned(),
+        version: crate_version!().to_owned(),
+    };
     HttpResponse::Ok().json(info)
 }
 
 fn main() -> std::io::Result<()> {
-    std::env::set_var("RUST_LOG", "actix_web=info");
+    dotenv().ok();
     env_logger::init();
+
+    let addr: String = env::var("ADDRESS")
+        .unwrap_or_else(|_| "0.0.0.0:8080".into())
+        .parse()
+        .expect("Can't Parse ADDRESS variable.");
 
     HttpServer::new(|| {
         App::new()
             // enable logger
             .wrap(middleware::Logger::default())
-            // .service(web::resource("/index.html").to(|| "Hello world!"))
             .service(web::resource("/").to(index))
             .service(web::resource("/healthz").to(healthz))
             .service(web::resource("/info").to(info))
             .default_service(web::resource("*").to(not_found))
     })
-    .bind("0.0.0.0:8080")?
+    .bind(addr)?
     .run()
 }

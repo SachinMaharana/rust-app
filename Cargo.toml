@@ -1,8 +1,10 @@
 [package]
 name = "rust-app"
-version = "0.1.0"
+version = "1.0.6"
 authors = ["SachinMaharana <sachin.nicky@gmail.com>"]
 edition = "2018"
+repository = "https://github.com/sachinmaharana/rust-app"
+description = "A simple rust service to deploy."
 
 [dependencies]
 actix-web = "1.0.0-alpha.4"
@@ -11,3 +13,5 @@ serde = "1.0"
 serde_json = "1.0"
 serde_derive = "1.0"
 hostname = "0.1.5"
+dotenv = "0.13.0"
+clap = "2.33.0" 
