@@ -10,7 +10,7 @@ FROM ekidd/rust-musl-builder AS builder
 ADD . ./
 
 # Fix permissions on source code.
-RUN sudo chown -R rust:rust .
+RUN sudo chown -R rust:rust /home/rust
 
 # Build our application.
 RUN cargo build --release
@@ -19,6 +19,6 @@ RUN cargo build --release
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates
 COPY --from=builder \
-    /src/target/x86_64-unknown-linux-musl/release/rust-app \
+    /home/rust/src/target/x86_64-unknown-linux-musl/release/rust-app \
     /usr/local/bin/
 CMD /usr/local/bin/rust-app
