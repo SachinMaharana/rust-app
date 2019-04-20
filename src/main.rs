@@ -59,6 +59,6 @@ fn main() -> std::io::Result<()> {
             .service(web::resource("/info").to(info))
             .default_service(web::resource("*").to(not_found))
     })
-    .bind("127.0.0.1:8080")?
+    .bind("0.0.0.0:8080")?
     .run()
 }
